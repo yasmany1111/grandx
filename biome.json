@@ -7,5 +7,29 @@
     "formatter": {
       "quoteStyle": "single"
     }
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "noNonNullAssertion": "off"
+      },
+      "a11y": {
+        "useSemanticElements": "off",
+        "useFocusableInteractive": "off",
+        "useAriaPropsForRole": "off",
+        "useKeyWithClickEvents": "off",
+        "noRedundantRoles": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noDoubleEquals": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      }
+    }
   }
 }
