@@ -8,7 +8,7 @@ import {
 	Warehouse,
 } from 'lucide-react';
 
-import { MAP_MODES } from '../data/mockWorld';
+import { MAP_MODES } from '../data/mock-world';
 import { useMapInteraction } from '../hooks/use-map-interaction';
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {

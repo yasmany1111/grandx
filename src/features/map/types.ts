@@ -19,6 +19,7 @@ export interface Province {
 	id: string;
 	name: string;
 	centroid: Vec2;
+	polygon: Vec2[];
 	neighbors: string[];
 	ownerTag: string;
 	controllerTag: string;
@@ -65,4 +66,3 @@ export interface MapInteractionState {
 	hoveredProvinceId: string | null;
 	mapMode: MapMode;
 }
-

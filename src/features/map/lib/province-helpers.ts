@@ -1,10 +1,4 @@
-import type {
-	Country,
-	MapConceptData,
-	Province,
-	ProvinceSummaryViewModel,
-	Region,
-} from '../types';
+import type { Country, MapConceptData, Province, ProvinceSummaryViewModel } from '../types';
 
 const DEVELOPMENT_THRESHOLDS: Array<{ threshold: number; label: ProvinceSummaryViewModel['developmentTier'] }> = [
 	{ threshold: 75, label: 'metropolis' },
@@ -57,4 +51,3 @@ export const getProvinceNeighbors = (provinceId: string, provinces: Province[]):
 	}
 	return provinces.filter((candidate) => target.neighbors.includes(candidate.id));
 };
-

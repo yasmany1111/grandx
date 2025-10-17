@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { DEFAULT_MAP_MODE } from '../data/mockWorld';
+import { DEFAULT_MAP_MODE } from '../data/mock-world';
 import type { MapInteractionState, MapMode } from '../types';
 
 interface MapInteractionStore extends MapInteractionState {

@@ -1,4 +1,4 @@
-import { MOCK_DEVELOPMENT_METRIC, MOCK_SUPPLY_METRIC, MOCK_RELATIONS } from '../data/mockWorld';
+import { MOCK_DEVELOPMENT_METRIC, MOCK_SUPPLY_METRIC, MOCK_RELATIONS } from '../data/mock-world';
 import type { Country, MapMode, MapOverlayMetric, Province } from '../types';
 
 const TERRAIN_COLORS: Record<Province['terrain'], string> = {

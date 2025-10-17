@@ -5,10 +5,11 @@
 - **Interaction:** Hover + selection wired through a Zustand store, surfacing data cards and sidebar intel.
 - **Modes:** Political, terrain, supply, development, diplomacy — mapped to palettes per the `docs/game-plan.md` design pillars.
 - **UI shell:** Top timeline bar, left map-mode rail, right province dossier, and bottom alert ticker to echo classic Paradox ergonomics.
+- **World layout:** Hand-authored polygonal provinces stitched into three continents plus island holdings, giving an immediately readable geopolitical silhouette.
 
 ## Current Scope
-- Mock world (`mockWorld.ts`) seeds 8 provinces across three polities with adjacency for connective overlays.
-- Map canvas batches province "blobs" with deterministic shapes and connection strokes to communicate chokepoints.
+- Mock world (`mock-world.ts`) seeds 12 provinces across three polities plus an island holding, with adjacency baked in for overlays.
+- Map canvas now renders province polygons extruded onto the terrain plane with shader-driven water surrounds for a continental silhouette.
 - HUD overlays (hover card, fog indicator, legend) demonstrate layering strategy for future metrics.
 - Province panel highlights development tiering, supply capacity, and occupation state messaging.
 
@@ -22,4 +23,3 @@
 ## Testing & Validation
 - Lint (`pnpm lint`) and build (`pnpm build`) once dependencies install locally (`pnpm install --no-frozen-lockfile`).
 - Manual smoke: hover/selection, mode toggling, layout responsiveness ≥1280px width.
-
