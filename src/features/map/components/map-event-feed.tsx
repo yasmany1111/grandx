@@ -34,7 +34,9 @@ export const MapEventFeed = () => (
 	<section className="flex w-full max-w-4xl items-center gap-4 rounded-3xl border border-slate-800/70 bg-slate-950/85 px-5 py-3 shadow-lg shadow-slate-900/60 backdrop-blur">
 		<div className="flex items-center gap-2 text-slate-400">
 			<BellDot className="h-5 w-5" />
-			<span className="text-xs font-semibold uppercase tracking-widest">Alerts</span>
+			<span className="text-xs font-semibold uppercase tracking-widest">
+				Alerts
+			</span>
 		</div>
 		<div className="flex flex-1 items-center gap-3 overflow-hidden">
 			{EVENTS.map((event) => {
@@ -51,7 +53,9 @@ export const MapEventFeed = () => (
 						</span>
 						<div className="min-w-0">
 							<p className="truncate font-medium">{event.title}</p>
-							<p className="truncate text-xs text-slate-300/80">{event.description}</p>
+							<p className="truncate text-xs text-slate-300/80">
+								{event.description}
+							</p>
 						</div>
 					</div>
 				);

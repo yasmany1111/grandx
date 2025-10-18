@@ -23,11 +23,6 @@
 - Name all files using kebab-case (e.g., `province-panel.tsx`), even for hooks and utilities.
 - Never use `export default`; favor named exports for consistency and tree-shaking.
 
-## Testing Guidelines
-- Automated tests are pending; when adding coverage, use Vitest + React Testing Library, name files `<unit>.test.tsx`, and colocate them with the source.
-- Document manual verification steps in PRs and capture edge-case screenshots for UI-heavy work until the suite stabilizes.
-- Prioritize render smoke-tests for map panels and pure unit tests for simulation helpers once that layer arrives.
-
 ## Commit & Pull Request Guidelines
 - Follow Conventional Commit prefixes (`feat:`, `fix:`, `chore:`, `docs:`) with imperative, ≤72-character subjects.
 - PRs include a short summary, linked issues or task IDs, and verification evidence (`pnpm lint`, `pnpm build`, `pnpm preview` when relevant).

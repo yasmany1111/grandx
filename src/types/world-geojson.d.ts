@@ -8,10 +8,17 @@ declare module 'world-geojson' {
 	}
 
 	export function forCountry(name: string): FeatureCollection;
-	export function forState(countryName: string, stateName: string): FeatureCollection;
-	export function forArea(countryName: string, areaName: string): FeatureCollection;
-	export function combineGeoJson(selectors: CountrySelector[]): FeatureCollection<Geometry>;
+	export function forState(
+		countryName: string,
+		stateName: string,
+	): FeatureCollection;
+	export function forArea(
+		countryName: string,
+		areaName: string,
+	): FeatureCollection;
+	export function combineGeoJson(
+		selectors: CountrySelector[],
+	): FeatureCollection<Geometry>;
 	const all: Record<string, GeoJsonObject>;
 	export default all;
 }
-

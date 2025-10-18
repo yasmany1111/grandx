@@ -14,7 +14,8 @@ const interpolate = (value: number, min: number, max: number): number => {
 	return (clamped - min) / (max - min || 1);
 };
 
-const lerpColorChannel = (start: number, end: number, t: number): number => start + (end - start) * t;
+const lerpColorChannel = (start: number, end: number, t: number): number =>
+	start + (end - start) * t;
 
 const hexToRgb = (hex: string): [number, number, number] => {
 	const normalized = hex.replace('#', '');
@@ -48,10 +49,18 @@ const diplomaticPalette = {
 
 const diplomaticScale = (value: number): string => {
 	if (value >= 50) {
-		return lerpHex(diplomaticPalette.neutral, diplomaticPalette.positive, interpolate(value, 50, 100));
+		return lerpHex(
+			diplomaticPalette.neutral,
+			diplomaticPalette.positive,
+			interpolate(value, 50, 100),
+		);
 	}
 	if (value <= -50) {
-		return lerpHex(diplomaticPalette.neutral, diplomaticPalette.negative, interpolate(Math.abs(value), 50, 100));
+		return lerpHex(
+			diplomaticPalette.neutral,
+			diplomaticPalette.negative,
+			interpolate(Math.abs(value), 50, 100),
+		);
 	}
 	return diplomaticPalette.neutral;
 };
@@ -64,21 +73,21 @@ export const getProvinceFill = (
 	switch (mapMode) {
 		case 'political':
 			return country?.color ?? '#888888';
-	case 'terrain':
-		return TERRAIN_COLORS[province.terrain];
-	case 'supply': {
+		case 'terrain':
+			return TERRAIN_COLORS[province.terrain];
+		case 'supply': {
 			const value = province.supplyLimit;
 			return lerpHex('#2f3f70', '#7bc4ff', interpolate(value, 6, 30));
 		}
-	case 'development': {
+		case 'development': {
 			const value = province.development;
 			return lerpHex('#282644', '#ffdd7f', interpolate(value, 20, 90));
 		}
-	case 'diplomacy': {
+		case 'diplomacy': {
 			const stance = province.ownerTag;
-				const opinion = MOCK_RELATIONS[stance] ?? 0;
-				return diplomaticScale(opinion);
-			}
+			const opinion = MOCK_RELATIONS[stance] ?? 0;
+			return diplomaticScale(opinion);
+		}
 		default:
 			return '#555555';
 	}

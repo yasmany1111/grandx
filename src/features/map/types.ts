@@ -7,6 +7,33 @@ export type MapMode =
 	| 'development'
 	| 'diplomacy';
 
+// Hexagon tile system types
+export interface HexCoordinate {
+	q: number; // column
+	r: number; // row
+}
+
+export type TerrainType =
+	| 'ocean'
+	| 'plains'
+	| 'forest'
+	| 'mountain'
+	| 'desert'
+	| 'coast';
+
+export interface HexTile {
+	coord: HexCoordinate;
+	id: string;
+	terrain: TerrainType;
+	elevation: number; // 0-100, used for terrain generation
+	neighbors: string[]; // neighbor tile IDs
+	ownerTag: string | null;
+	controllerTag: string | null;
+	development: number;
+	supplyLimit: number;
+	population: number;
+}
+
 export interface Country {
 	tag: string;
 	name: string;
@@ -53,6 +80,13 @@ export interface MapConceptData {
 	regions: Region[];
 }
 
+export interface HexMapData {
+	tiles: Map<string, HexTile>;
+	countries: Country[];
+	width: number; // grid width in hexes
+	height: number; // grid height in hexes
+}
+
 export interface ProvinceSummaryViewModel {
 	province: Province;
 	owner: Country | undefined;
@@ -65,4 +99,16 @@ export interface MapInteractionState {
 	selectedProvinceId: string | null;
 	hoveredProvinceId: string | null;
 	mapMode: MapMode;
+}
+
+export interface HexMapInteractionState {
+	selectedTileId: string | null;
+	hoveredTileId: string | null;
+	mapMode: MapMode;
+}
+
+export interface TileSummaryViewModel {
+	tile: HexTile;
+	owner: Country | undefined;
+	controller: Country | undefined;
 }

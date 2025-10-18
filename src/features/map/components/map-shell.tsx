@@ -1,16 +1,16 @@
-import { MapCanvas } from './map-canvas';
+import { D3HexMap } from './d3-hex-map';
 import { MapEventFeed } from './map-event-feed';
+import { MapHud } from './map-hud';
 import { MapLegend } from './map-legend';
 import { MapModeToolbar } from './map-mode-toolbar';
 import { MapTopBar } from './map-top-bar';
-import { MapHud } from './map-hud';
-import { ProvincePanel } from './province-panel';
+import { TilePanel } from './tile-panel';
 
 export const MapShell = () => {
 	return (
 		<div className="relative h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
 			<div className="absolute inset-0">
-				<MapCanvas />
+				<D3HexMap />
 			</div>
 			<div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.12),transparent_60%),radial-gradient(circle_at_80%_30%,rgba(168,85,247,0.15),transparent_55%)]" />
 			<div className="pointer-events-none absolute inset-0 z-10">
@@ -29,7 +29,7 @@ export const MapShell = () => {
 					<MapLegend />
 				</div>
 				<div className="pointer-events-auto absolute right-8 top-1/2 -translate-y-1/2">
-					<ProvincePanel />
+					<TilePanel />
 				</div>
 				<div className="pointer-events-auto absolute inset-x-0 bottom-8 flex justify-center px-6">
 					<MapEventFeed />

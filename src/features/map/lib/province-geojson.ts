@@ -1,7 +1,6 @@
-import type { FeatureCollection, Feature, Polygon } from 'geojson';
-
-import { ensureClosedRing, toLeafletPoint } from './map-projection';
+import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import type { MapConceptData, Province, Vec2 } from '../types';
+import { ensureClosedRing, toLeafletPoint } from './map-projection';
 
 export interface ProvinceFeatureProperties {
 	provinceId: string;
@@ -11,12 +10,17 @@ export interface ProvinceFeatureProperties {
 	name: string;
 }
 
-export type ProvinceFeatureCollection = FeatureCollection<Polygon, ProvinceFeatureProperties>;
+export type ProvinceFeatureCollection = FeatureCollection<
+	Polygon,
+	ProvinceFeatureProperties
+>;
 
 const toLeafletCoordinates = (polygon: Vec2[]): Array<[number, number]> =>
 	ensureClosedRing(polygon.map((point) => toLeafletPoint(point)));
 
-const convertProvinceToPolygon = (province: Province): Feature<Polygon, ProvinceFeatureProperties> | null => {
+const convertProvinceToPolygon = (
+	province: Province,
+): Feature<Polygon, ProvinceFeatureProperties> | null => {
 	if (!province.polygon || province.polygon.length < 3) {
 		return null;
 	}
@@ -37,7 +41,9 @@ const convertProvinceToPolygon = (province: Province): Feature<Polygon, Province
 	};
 };
 
-export const buildProvinceFeatureCollection = (data: MapConceptData): ProvinceFeatureCollection => {
+export const buildProvinceFeatureCollection = (
+	data: MapConceptData,
+): ProvinceFeatureCollection => {
 	const features: Array<Feature<Polygon, ProvinceFeatureProperties>> = [];
 	for (const province of data.provinces) {
 		const feature = convertProvinceToPolygon(province);

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { GeoJsonObject } from 'geojson';
-import { PathOptions, latLngBounds, type Path } from 'leaflet';
+import { latLngBounds, type Path, type PathOptions } from 'leaflet';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { GeoJSON, MapContainer } from 'react-leaflet';
 
 import { MOCK_MAP_DATA } from '../data/mock-world';
 import { useMapInteraction } from '../hooks/use-map-interaction';
-import { getProvinceFill, getBorderColor } from '../lib/map-colors';
+import { getBorderColor, getProvinceFill } from '../lib/map-colors';
 import {
 	buildProvinceFeatureCollection,
 	type ProvinceFeatureCollection,
@@ -25,11 +25,15 @@ const ProvinceGeoLayer = ({ featureCollection }: ProvinceGeoLayerProps) => {
 	} = useMapInteraction();
 
 	const provinceById = useMemo(
-		() => new Map(MOCK_MAP_DATA.provinces.map((province) => [province.id, province])),
+		() =>
+			new Map(
+				MOCK_MAP_DATA.provinces.map((province) => [province.id, province]),
+			),
 		[],
 	);
 	const countriesByTag = useMemo(
-		() => new Map(MOCK_MAP_DATA.countries.map((country) => [country.tag, country])),
+		() =>
+			new Map(MOCK_MAP_DATA.countries.map((country) => [country.tag, country])),
 		[],
 	);
 
@@ -37,28 +41,34 @@ const ProvinceGeoLayer = ({ featureCollection }: ProvinceGeoLayerProps) => {
 
 	const applyLayerStyle = useCallback(
 		(provinceId: string, layer: Path) => {
-		const province = provinceById.get(provinceId);
-		if (!province) {
-			return;
-		}
-		const owner = countriesByTag.get(province.ownerTag);
-		const isSelected = selectedProvinceId === province.id;
-		const isHovered = hoveredProvinceId === province.id;
-		const fill = getProvinceFill(province, mapMode, owner);
-		const style: PathOptions = {
-			color: isSelected ? '#f8fafc' : '#111827',
-			weight: isSelected ? 2.5 : 1.1,
-			fillColor: fill,
-			fillOpacity: isSelected ? 0.82 : isHovered ? 0.7 : 0.55,
-			opacity: isSelected ? 0.95 : 0.65,
-			className: 'province-shape',
-		};
-		layer.setStyle(style);
-		if (isSelected && 'bringToFront' in layer) {
-			layer.bringToFront();
-		}
+			const province = provinceById.get(provinceId);
+			if (!province) {
+				return;
+			}
+			const owner = countriesByTag.get(province.ownerTag);
+			const isSelected = selectedProvinceId === province.id;
+			const isHovered = hoveredProvinceId === province.id;
+			const fill = getProvinceFill(province, mapMode, owner);
+			const style: PathOptions = {
+				color: isSelected ? '#f8fafc' : '#111827',
+				weight: isSelected ? 2.5 : 1.1,
+				fillColor: fill,
+				fillOpacity: isSelected ? 0.82 : isHovered ? 0.7 : 0.55,
+				opacity: isSelected ? 0.95 : 0.65,
+				className: 'province-shape',
+			};
+			layer.setStyle(style);
+			if (isSelected && 'bringToFront' in layer) {
+				layer.bringToFront();
+			}
 		},
-		[mapMode, hoveredProvinceId, selectedProvinceId, countriesByTag, provinceById],
+		[
+			mapMode,
+			hoveredProvinceId,
+			selectedProvinceId,
+			countriesByTag,
+			provinceById,
+		],
 	);
 
 	useEffect(() => {
@@ -73,7 +83,9 @@ const ProvinceGeoLayer = ({ featureCollection }: ProvinceGeoLayerProps) => {
 			style={() => ({ color: '#111827', weight: 1 })}
 			smoothFactor={0.5}
 			onEachFeature={(feature, layer) => {
-				const properties = feature.properties as { provinceId?: string } | undefined;
+				const properties = feature.properties as
+					| { provinceId?: string }
+					| undefined;
 				const provinceId = properties?.provinceId;
 				if (!provinceId) {
 					return;
@@ -97,7 +109,9 @@ const ProvinceGeoLayer = ({ featureCollection }: ProvinceGeoLayerProps) => {
 	);
 };
 
-const getFeatureCollectionBounds = (featureCollection: ProvinceFeatureCollection) => {
+const getFeatureCollectionBounds = (
+	featureCollection: ProvinceFeatureCollection,
+) => {
 	let minLat = Infinity;
 	let minLng = Infinity;
 	let maxLat = -Infinity;
@@ -132,7 +146,12 @@ const getFeatureCollectionBounds = (featureCollection: ProvinceFeatureCollection
 			}
 		}
 	}
-	if (minLat === Infinity || minLng === Infinity || maxLat === -Infinity || maxLng === -Infinity) {
+	if (
+		minLat === Infinity ||
+		minLng === Infinity ||
+		maxLat === -Infinity ||
+		maxLng === -Infinity
+	) {
 		return latLngBounds([0, 0], [0, 0]);
 	}
 	return latLngBounds([minLat, minLng], [maxLat, maxLng]).pad(0.2);
@@ -141,13 +160,22 @@ const getFeatureCollectionBounds = (featureCollection: ProvinceFeatureCollection
 export const MapCanvas = () => {
 	const { mapMode } = useMapInteraction();
 	const borderColor = getBorderColor(mapMode);
-	const featureCollection = useMemo(() => buildProvinceFeatureCollection(MOCK_MAP_DATA), []);
-	const bounds = useMemo(() => getFeatureCollectionBounds(featureCollection), [featureCollection]);
+	const featureCollection = useMemo(
+		() => buildProvinceFeatureCollection(MOCK_MAP_DATA),
+		[],
+	);
+	const bounds = useMemo(
+		() => getFeatureCollectionBounds(featureCollection),
+		[featureCollection],
+	);
 
 	return (
 		<div className="relative h-full w-full">
 			<div className="map-gradient-overlay absolute inset-0" aria-hidden />
-			<div className="absolute inset-0 bg-gradient-to-br from-slate-950/70 via-slate-950/20 to-slate-950/80" aria-hidden />
+			<div
+				className="absolute inset-0 bg-gradient-to-br from-slate-950/70 via-slate-950/20 to-slate-950/80"
+				aria-hidden
+			/>
 			<MapContainer
 				bounds={bounds}
 				boundsOptions={{ padding: [40, 40] }}

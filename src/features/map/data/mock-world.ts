@@ -1,5 +1,5 @@
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
-
+import { getFeatureCentroid } from '../lib/geojson-centroid';
 import type {
 	Country,
 	MapConceptData,
@@ -9,24 +9,34 @@ import type {
 	Province,
 	Region,
 } from '../types';
-import { getFeatureCentroid } from '../lib/geojson-centroid';
 
-const countryModules = import.meta.glob<FeatureCollection<Geometry>>('../../../../node_modules/world-geojson/countries/*.json', {
-	eager: true,
-	import: 'default',
-});
+const countryModules = import.meta.glob<FeatureCollection<Geometry>>(
+	'../../../../node_modules/world-geojson/countries/*.json',
+	{
+		eager: true,
+		import: 'default',
+	},
+);
 
-const stateModules = import.meta.glob<FeatureCollection<Geometry>>('../../../../node_modules/world-geojson/states/**/*.json', {
-	eager: true,
-	import: 'default',
-});
+const stateModules = import.meta.glob<FeatureCollection<Geometry>>(
+	'../../../../node_modules/world-geojson/states/**/*.json',
+	{
+		eager: true,
+		import: 'default',
+	},
+);
 
-const areaModules = import.meta.glob<FeatureCollection<Geometry>>('../../../../node_modules/world-geojson/areas/**/*.json', {
-	eager: true,
-	import: 'default',
-});
+const areaModules = import.meta.glob<FeatureCollection<Geometry>>(
+	'../../../../node_modules/world-geojson/areas/**/*.json',
+	{
+		eager: true,
+		import: 'default',
+	},
+);
 
-const toFeatures = (collections: Record<string, FeatureCollection<Geometry>>): Feature[] =>
+const toFeatures = (
+	collections: Record<string, FeatureCollection<Geometry>>,
+): Feature[] =>
 	Object.values(collections).flatMap((collection) => collection.features ?? []);
 
 const GEOJSON: FeatureCollection<Geometry> = {
@@ -34,7 +44,11 @@ const GEOJSON: FeatureCollection<Geometry> = {
 	features: toFeatures(countryModules),
 };
 
-const safeProperty = <T extends Feature>(feature: T, keys: string[], fallback = ''): string => {
+const safeProperty = <T extends Feature>(
+	feature: T,
+	keys: string[],
+	fallback = '',
+): string => {
 	const properties = feature.properties as Record<string, unknown> | undefined;
 	if (!properties) {
 		return fallback;
@@ -48,7 +62,11 @@ const safeProperty = <T extends Feature>(feature: T, keys: string[], fallback = 
 	return fallback;
 };
 
-const slugify = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'unknown';
+const slugify = (value: string): string =>
+	value
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/(^-|-$)/g, '') || 'unknown';
 
 const formatDatasetName = (value: string): string =>
 	value
@@ -115,7 +133,10 @@ const regionsById = new Map<string, Region>();
 const subdivisionsByCountryTag = new Map<string, Province[]>();
 
 const registerProvinceRegion = (provinceId: string, regionName: string) => {
-	const safeName = regionName && regionName.trim().length > 0 ? regionName : 'Unassigned Region';
+	const safeName =
+		regionName && regionName.trim().length > 0
+			? regionName
+			: 'Unassigned Region';
 	const regionId = `region-${slugify(safeName) || 'unassigned'}`;
 	provinceRegionNameLookup.set(provinceId, safeName);
 	provinceRegionIdLookup.set(provinceId, regionId);
@@ -123,7 +144,11 @@ const registerProvinceRegion = (provinceId: string, regionName: string) => {
 	if (existing) {
 		existing.provinceIds.push(provinceId);
 	} else {
-		regionsById.set(regionId, { id: regionId, name: safeName, provinceIds: [provinceId] });
+		regionsById.set(regionId, {
+			id: regionId,
+			name: safeName,
+			provinceIds: [provinceId],
+		});
 	}
 };
 
@@ -136,7 +161,11 @@ const buildBaseProvinces = (): Province[] => {
 	const features = GEOJSON.features ?? [];
 	return features
 		.map((feature, index) => {
-			const name = safeProperty(feature, ['name', 'NAME'], `Territory ${index + 1}`);
+			const name = safeProperty(
+				feature,
+				['name', 'NAME'],
+				`Territory ${index + 1}`,
+			);
 			const ownerName = safeProperty(
 				feature,
 				['admin', 'ADMIN', 'sovereignt', 'SOVEREIGNT', 'name', 'NAME'],
@@ -153,7 +182,14 @@ const buildBaseProvinces = (): Province[] => {
 			const devBase = hashString(name) % 60;
 			const regionName = safeProperty(
 				feature,
-				['subregion', 'SUBREGION', 'region', 'REGION', 'continent', 'CONTINENT'],
+				[
+					'subregion',
+					'SUBREGION',
+					'region',
+					'REGION',
+					'continent',
+					'CONTINENT',
+				],
 				ownerName,
 			);
 			const provinceId = `prov-${datasetKey}-${slugify(name)}`;
@@ -223,7 +259,11 @@ const registerSubdivisionCollections = (
 		const ownerName = countryLabelByTag.get(ownerTag) ?? datasetKey;
 		const bucket = ensureSubdivisionBucket(ownerTag);
 		for (const feature of collection.features ?? []) {
-			const name = safeProperty(feature, ['name', 'NAME'], `${ownerName} ${options.typeLabel}`);
+			const name = safeProperty(
+				feature,
+				['name', 'NAME'],
+				`${ownerName} ${options.typeLabel}`,
+			);
 			const polygon = extractPolygon(feature);
 			if (!polygon) {
 				continue;
@@ -303,17 +343,23 @@ export const MAP_MODES: MapModeDefinition[] = [
 	},
 ];
 
-export const MOCK_DEVELOPMENT_METRIC: MapOverlayMetric[] = provinces.map((province) => ({
-	provinceId: province.id,
-	value: province.development,
-}));
+export const MOCK_DEVELOPMENT_METRIC: MapOverlayMetric[] = provinces.map(
+	(province) => ({
+		provinceId: province.id,
+		value: province.development,
+	}),
+);
 
-export const MOCK_SUPPLY_METRIC: MapOverlayMetric[] = provinces.map((province) => ({
-	provinceId: province.id,
-	value: province.supplyLimit,
-}));
+export const MOCK_SUPPLY_METRIC: MapOverlayMetric[] = provinces.map(
+	(province) => ({
+		provinceId: province.id,
+		value: province.supplyLimit,
+	}),
+);
 
-export const MOCK_RELATIONS: Record<string, number> = countries.reduce<Record<string, number>>((acc, country, index) => {
+export const MOCK_RELATIONS: Record<string, number> = countries.reduce<
+	Record<string, number>
+>((acc, country, index) => {
 	acc[country.tag] = -40 + (index % 5) * 20;
 	return acc;
 }, {});
@@ -331,11 +377,15 @@ export const getCountrySubdivisions = (ownerTag: string): Province[] | null => {
 	return list ? [...list] : null;
 };
 
-export const findProvinceById = (provinceId: string): Province | undefined => provinceLookup.get(provinceId);
+export const findProvinceById = (provinceId: string): Province | undefined =>
+	provinceLookup.get(provinceId);
 
-export const findCountryByTag = (tag: string): Country | undefined => countryLookupByTag.get(tag);
+export const findCountryByTag = (tag: string): Country | undefined =>
+	countryLookupByTag.get(tag);
 
-export const findRegionByProvinceId = (provinceId: string): Region | undefined => {
+export const findRegionByProvinceId = (
+	provinceId: string,
+): Region | undefined => {
 	const regionId = provinceRegionIdLookup.get(provinceId);
 	if (!regionId) {
 		return undefined;
@@ -346,4 +396,3 @@ export const findRegionByProvinceId = (provinceId: string): Region | undefined =
 	}
 	return { ...region, provinceIds: [...region.provinceIds] };
 };
-

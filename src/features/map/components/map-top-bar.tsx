@@ -5,12 +5,18 @@ export const MapTopBar = () => {
 		<header className="flex w-full items-center justify-between rounded-3xl border border-slate-800/70 bg-slate-950/85 px-6 py-4 shadow-lg shadow-slate-900/70 backdrop-blur">
 			<div className="flex flex-1 items-center gap-6">
 				<div className="flex flex-col">
-					<span className="text-xs uppercase tracking-widest text-slate-500">Date</span>
+					<span className="text-xs uppercase tracking-widest text-slate-500">
+						Date
+					</span>
 					<p className="text-xl font-semibold text-slate-100">12 March 1852</p>
 				</div>
 				<div className="hidden flex-col sm:flex">
-					<span className="text-xs uppercase tracking-widest text-slate-500">Era Objectives</span>
-					<p className="text-sm text-slate-300">Industrialize the heartlands · Secure northern sea lanes</p>
+					<span className="text-xs uppercase tracking-widest text-slate-500">
+						Era Objectives
+					</span>
+					<p className="text-sm text-slate-300">
+						Industrialize the heartlands · Secure northern sea lanes
+					</p>
 				</div>
 			</div>
 			<div className="flex items-center gap-3">

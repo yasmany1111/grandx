@@ -17,4 +17,3 @@ export const useMapInteraction = create<MapInteractionStore>((set) => ({
 	setSelectedProvince: (provinceId) => set({ selectedProvinceId: provinceId }),
 	setMapMode: (mode) => set({ mapMode: mode }),
 }));
-

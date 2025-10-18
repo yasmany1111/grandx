@@ -1,15 +1,15 @@
-import type { ComponentType } from 'react';
-import { cn } from '@/lib/utils';
 import {
+	Handshake,
 	Layers,
 	Mountain,
 	TrendingUp,
-	Handshake,
 	Warehouse,
 } from 'lucide-react';
+import type { ComponentType } from 'react';
+import { cn } from '@/lib/utils';
 
-import { MAP_MODES } from '../data/mock-world';
-import { useMapInteraction } from '../hooks/use-map-interaction';
+import { MAP_MODES } from '../data/hex-world';
+import { useHexMapInteraction } from '../hooks/use-hex-map-interaction';
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
 	layers: Layers,
@@ -20,7 +20,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
 };
 
 export const MapModeToolbar = () => {
-	const { mapMode, setMapMode } = useMapInteraction();
+	const { mapMode, setMapMode } = useHexMapInteraction();
 
 	return (
 		<section className="flex w-24 flex-col rounded-3xl border border-slate-800/70 bg-slate-950/85 p-4 shadow-lg shadow-slate-900/60 backdrop-blur">

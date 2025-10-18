@@ -25,7 +25,9 @@ const getPolygonCentroid = (polygon: Polygon): [number, number] => {
 	return [centroidLng / (6 * area), centroidLat / (6 * area)];
 };
 
-const getGeometryCentroid = (geometry: Geometry | null | undefined): [number, number] => {
+const getGeometryCentroid = (
+	geometry: Geometry | null | undefined,
+): [number, number] => {
 	if (!geometry) {
 		return [0, 0];
 	}
@@ -42,4 +44,5 @@ const getGeometryCentroid = (geometry: Geometry | null | undefined): [number, nu
 	return [0, 0];
 };
 
-export const getFeatureCentroid = (feature: Feature): [number, number] => getGeometryCentroid(feature.geometry);
+export const getFeatureCentroid = (feature: Feature): [number, number] =>
+	getGeometryCentroid(feature.geometry);
