@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import type { Feature, GeoJsonObject } from 'geojson';
-import { PathOptions, latLngBounds } from 'leaflet';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import type { GeoJsonObject } from 'geojson';
+import { PathOptions, latLngBounds, type Path } from 'leaflet';
 import { GeoJSON, MapContainer } from 'react-leaflet';
 
 import { MOCK_MAP_DATA } from '../data/mock-world';
@@ -33,54 +33,54 @@ const ProvinceGeoLayer = ({ featureCollection }: ProvinceGeoLayerProps) => {
 		[],
 	);
 
-	const layerKey = `${mapMode}-${hoveredProvinceId ?? 'none'}-${selectedProvinceId ?? 'none'}`;
+	const layersRef = useRef(new Map<string, Path>());
 
-	const styleFeature = (feature: Feature | undefined): PathOptions => {
-		const properties = feature?.properties as
-			| { provinceId?: string; ownerTag?: string; controllerTag?: string }
-			| undefined;
-		if (!properties?.provinceId) {
-			return {
-				color: '#0f172a',
-				weight: 1,
-				fillColor: '#1e293b',
-				fillOpacity: 0.45,
-			};
-		}
-		const province = provinceById.get(properties.provinceId);
+	const applyLayerStyle = useCallback(
+		(provinceId: string, layer: Path) => {
+		const province = provinceById.get(provinceId);
 		if (!province) {
-			return {
-				color: '#0f172a',
-				weight: 1,
-				fillColor: '#1e293b',
-				fillOpacity: 0.45,
-			};
+			return;
 		}
 		const owner = countriesByTag.get(province.ownerTag);
 		const isSelected = selectedProvinceId === province.id;
 		const isHovered = hoveredProvinceId === province.id;
 		const fill = getProvinceFill(province, mapMode, owner);
-		return {
+		const style: PathOptions = {
 			color: isSelected ? '#f8fafc' : '#111827',
-			weight: isSelected ? 2.5 : 1.2,
+			weight: isSelected ? 2.5 : 1.1,
 			fillColor: fill,
-			fillOpacity: isSelected ? 0.82 : isHovered ? 0.7 : 0.58,
-			opacity: isSelected ? 0.9 : 0.65,
+			fillOpacity: isSelected ? 0.82 : isHovered ? 0.7 : 0.55,
+			opacity: isSelected ? 0.95 : 0.65,
 			className: 'province-shape',
 		};
-	};
+		layer.setStyle(style);
+		if (isSelected && 'bringToFront' in layer) {
+			layer.bringToFront();
+		}
+		},
+		[mapMode, hoveredProvinceId, selectedProvinceId, countriesByTag, provinceById],
+	);
+
+	useEffect(() => {
+		for (const [provinceId, layer] of layersRef.current.entries()) {
+			applyLayerStyle(provinceId, layer);
+		}
+	}, [applyLayerStyle]);
 
 	return (
 		<GeoJSON
-			key={layerKey}
 			data={featureCollection as GeoJsonObject}
-			style={(feature) => styleFeature(feature)}
+			style={() => ({ color: '#111827', weight: 1 })}
+			smoothFactor={0.5}
 			onEachFeature={(feature, layer) => {
 				const properties = feature.properties as { provinceId?: string } | undefined;
 				const provinceId = properties?.provinceId;
 				if (!provinceId) {
 					return;
 				}
+				const pathLayer = layer as Path;
+				layersRef.current.set(provinceId, pathLayer);
+				applyLayerStyle(provinceId, pathLayer);
 				layer.on({
 					mouseover: () => {
 						setHoveredProvince(provinceId);
@@ -159,6 +159,7 @@ export const MapCanvas = () => {
 				doubleClickZoom={false}
 				attributionControl={false}
 				className="relative z-10 h-full w-full rounded-[2.5rem]"
+				preferCanvas
 			>
 				<ProvinceGeoLayer featureCollection={featureCollection} />
 			</MapContainer>

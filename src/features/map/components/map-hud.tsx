@@ -1,12 +1,11 @@
 import { Flame, Gem, Shield, Users } from 'lucide-react';
 
-import { MOCK_MAP_DATA } from '../data/mock-world';
 import { useMapInteraction } from '../hooks/use-map-interaction';
 import { getProvinceSummary } from '../lib/province-helpers';
 
 export const MapHud = () => {
 	const { hoveredProvinceId, mapMode } = useMapInteraction();
-	const summary = getProvinceSummary(hoveredProvinceId, MOCK_MAP_DATA);
+	const summary = getProvinceSummary(hoveredProvinceId);
 
 	return (
 		<div className="flex items-start gap-4">

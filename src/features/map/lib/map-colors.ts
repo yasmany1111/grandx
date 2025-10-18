@@ -1,5 +1,5 @@
-import { MOCK_DEVELOPMENT_METRIC, MOCK_SUPPLY_METRIC, MOCK_RELATIONS } from '../data/mock-world';
-import type { Country, MapMode, MapOverlayMetric, Province } from '../types';
+import { MOCK_RELATIONS } from '../data/mock-world';
+import type { Country, MapMode, Province } from '../types';
 
 const TERRAIN_COLORS: Record<Province['terrain'], string> = {
 	coast: '#3a8fb7',
@@ -40,12 +40,6 @@ const lerpHex = (start: string, end: string, t: number): string => {
 	);
 };
 
-const buildMetricLookup = (metrics: MapOverlayMetric[]): Record<string, number> =>
-	Object.fromEntries(metrics.map((metric) => [metric.provinceId, metric.value]));
-
-const developmentLookup = buildMetricLookup(MOCK_DEVELOPMENT_METRIC);
-const supplyLookup = buildMetricLookup(MOCK_SUPPLY_METRIC);
-
 const diplomaticPalette = {
 	positive: '#59c08d',
 	neutral: '#d1c284',
@@ -70,18 +64,18 @@ export const getProvinceFill = (
 	switch (mapMode) {
 		case 'political':
 			return country?.color ?? '#888888';
-		case 'terrain':
-			return TERRAIN_COLORS[province.terrain];
-		case 'supply': {
-				const value = supplyLookup[province.id] ?? 0;
-				return lerpHex('#2f3f70', '#7bc4ff', interpolate(value, 6, 24));
-			}
-		case 'development': {
-				const value = developmentLookup[province.id] ?? 0;
-				return lerpHex('#282644', '#ffdd7f', interpolate(value, 20, 80));
-			}
-		case 'diplomacy': {
-				const stance = province.ownerTag;
+	case 'terrain':
+		return TERRAIN_COLORS[province.terrain];
+	case 'supply': {
+			const value = province.supplyLimit;
+			return lerpHex('#2f3f70', '#7bc4ff', interpolate(value, 6, 30));
+		}
+	case 'development': {
+			const value = province.development;
+			return lerpHex('#282644', '#ffdd7f', interpolate(value, 20, 90));
+		}
+	case 'diplomacy': {
+			const stance = province.ownerTag;
 				const opinion = MOCK_RELATIONS[stance] ?? 0;
 				return diplomaticScale(opinion);
 			}
@@ -104,4 +98,3 @@ export const getBorderColor = (mapMode: MapMode): string => {
 			return '#1f1a27';
 	}
 };
-

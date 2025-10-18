@@ -1,15 +1,4 @@
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
-import franceGeoJson from 'world-geojson/countries/france.json';
-import spainGeoJson from 'world-geojson/countries/spain.json';
-import germanyGeoJson from 'world-geojson/countries/germany.json';
-import italyGeoJson from 'world-geojson/countries/italy.json';
-import unitedKingdomGeoJson from 'world-geojson/countries/united_kingdom.json';
-import norwayGeoJson from 'world-geojson/countries/norway.json';
-import swedenGeoJson from 'world-geojson/countries/sweden.json';
-import denmarkGeoJson from 'world-geojson/countries/denmark.json';
-import portugalGeoJson from 'world-geojson/countries/portugal.json';
-import belgiumGeoJson from 'world-geojson/countries/belgium.json';
-import netherlandsGeoJson from 'world-geojson/countries/netherlands.json';
 
 import type {
 	Country,
@@ -22,23 +11,27 @@ import type {
 } from '../types';
 import { getFeatureCentroid } from '../lib/geojson-centroid';
 
-const SOURCE_COLLECTIONS: FeatureCollection<Geometry>[] = [
-	franceGeoJson as FeatureCollection<Geometry>,
-	spainGeoJson as FeatureCollection<Geometry>,
-	germanyGeoJson as FeatureCollection<Geometry>,
-	italyGeoJson as FeatureCollection<Geometry>,
-	unitedKingdomGeoJson as FeatureCollection<Geometry>,
-	norwayGeoJson as FeatureCollection<Geometry>,
-	swedenGeoJson as FeatureCollection<Geometry>,
-	denmarkGeoJson as FeatureCollection<Geometry>,
-	portugalGeoJson as FeatureCollection<Geometry>,
-	belgiumGeoJson as FeatureCollection<Geometry>,
-	netherlandsGeoJson as FeatureCollection<Geometry>,
-];
+const countryModules = import.meta.glob<FeatureCollection<Geometry>>('../../../../node_modules/world-geojson/countries/*.json', {
+	eager: true,
+	import: 'default',
+});
+
+const stateModules = import.meta.glob<FeatureCollection<Geometry>>('../../../../node_modules/world-geojson/states/**/*.json', {
+	eager: true,
+	import: 'default',
+});
+
+const areaModules = import.meta.glob<FeatureCollection<Geometry>>('../../../../node_modules/world-geojson/areas/**/*.json', {
+	eager: true,
+	import: 'default',
+});
+
+const toFeatures = (collections: Record<string, FeatureCollection<Geometry>>): Feature[] =>
+	Object.values(collections).flatMap((collection) => collection.features ?? []);
 
 const GEOJSON: FeatureCollection<Geometry> = {
-	 type: 'FeatureCollection',
-	 features: SOURCE_COLLECTIONS.flatMap((collection) => collection.features ?? []),
+	type: 'FeatureCollection',
+	features: toFeatures(countryModules),
 };
 
 const safeProperty = <T extends Feature>(feature: T, keys: string[], fallback = ''): string => {
@@ -56,6 +49,13 @@ const safeProperty = <T extends Feature>(feature: T, keys: string[], fallback = 
 };
 
 const slugify = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'unknown';
+
+const formatDatasetName = (value: string): string =>
+	value
+		.toLowerCase()
+		.replace(/ /g, '_')
+		.replace(/\./g, '')
+		.replace(/&/g, 'and');
 
 const extractPolygon = (feature: Feature): Array<[number, number]> | null => {
 	const geometry = feature.geometry;
@@ -105,14 +105,45 @@ const hashString = (input: string): number => {
 	return Math.abs(hash);
 };
 
-const provinceRegionLookup = new Map<string, string>();
+const countryLabelByTag = new Map<string, string>();
+const countryDatasetKeyByTag = new Map<string, string>();
+const countryTagByDatasetKey = new Map<string, string>();
+const provinceLookup = new Map<string, Province>();
+const provinceRegionNameLookup = new Map<string, string>();
+const provinceRegionIdLookup = new Map<string, string>();
+const regionsById = new Map<string, Region>();
+const subdivisionsByCountryTag = new Map<string, Province[]>();
 
-const buildProvinces = (): Province[] => {
+const registerProvinceRegion = (provinceId: string, regionName: string) => {
+	const safeName = regionName && regionName.trim().length > 0 ? regionName : 'Unassigned Region';
+	const regionId = `region-${slugify(safeName) || 'unassigned'}`;
+	provinceRegionNameLookup.set(provinceId, safeName);
+	provinceRegionIdLookup.set(provinceId, regionId);
+	const existing = regionsById.get(regionId);
+	if (existing) {
+		existing.provinceIds.push(provinceId);
+	} else {
+		regionsById.set(regionId, { id: regionId, name: safeName, provinceIds: [provinceId] });
+	}
+};
+
+const registerProvince = (province: Province, regionName: string) => {
+	provinceLookup.set(province.id, province);
+	registerProvinceRegion(province.id, regionName);
+};
+
+const buildBaseProvinces = (): Province[] => {
 	const features = GEOJSON.features ?? [];
 	return features
 		.map((feature, index) => {
-			const name = safeProperty(feature, ['name', 'NAME', 'admin', 'ADMIN'], `Territory ${index + 1}`);
-			const slug = slugify(name);
+			const name = safeProperty(feature, ['name', 'NAME'], `Territory ${index + 1}`);
+			const ownerName = safeProperty(
+				feature,
+				['admin', 'ADMIN', 'sovereignt', 'SOVEREIGNT', 'name', 'NAME'],
+				name,
+			);
+			const datasetKey = formatDatasetName(ownerName);
+			const ownerTag = `country-${datasetKey}`;
 			const polygon = extractPolygon(feature);
 			if (!polygon) {
 				return null;
@@ -120,22 +151,30 @@ const buildProvinces = (): Province[] => {
 			const [lng, lat] = getFeatureCentroid(feature);
 			const terrain = deriveTerrain(lat);
 			const devBase = hashString(name) % 60;
-			const regionName = safeProperty(feature, ['subregion', 'SUBREGION', 'region', 'REGION', 'continent', 'CONTINENT'], 'European Theatre');
-			const provinceId = `prov-${slug}`;
-			provinceRegionLookup.set(provinceId, regionName);
-			return {
+			const regionName = safeProperty(
+				feature,
+				['subregion', 'SUBREGION', 'region', 'REGION', 'continent', 'CONTINENT'],
+				ownerName,
+			);
+			const provinceId = `prov-${datasetKey}-${slugify(name)}`;
+			const province: Province = {
 				id: provinceId,
 				name,
 				centroid: [lng, lat],
 				polygon,
 				neighbors: [],
-				ownerTag: `country-${slug}`,
-				controllerTag: `country-${slug}`,
+				ownerTag,
+				controllerTag: ownerTag,
 				terrain,
 				development: 40 + (devBase % 50),
 				supplyLimit: 12 + (devBase % 18),
 				population: 300000 + (hashString(`${name}-pop`) % 3000000),
 			};
+			countryLabelByTag.set(ownerTag, ownerName);
+			countryDatasetKeyByTag.set(ownerTag, datasetKey);
+			countryTagByDatasetKey.set(datasetKey, ownerTag);
+			registerProvince(province, regionName);
+			return province;
 		})
 		.filter((province): province is Province => province !== null);
 };
@@ -146,39 +185,90 @@ const buildCountries = (provinces: Province[]): Country[] => {
 		if (countriesByTag.has(province.ownerTag)) {
 			continue;
 		}
-		const name = province.name;
+		const ownerName = countryLabelByTag.get(province.ownerTag) ?? province.name;
 		countriesByTag.set(province.ownerTag, {
 			tag: province.ownerTag,
-			name,
-			color: `hsl(${hashString(name) % 360}deg 70% 60%)`,
+			name: ownerName,
+			color: `hsl(${hashString(ownerName) % 360}deg 70% 60%)`,
 			capitalProvinceId: province.id,
 		});
 	}
 	return Array.from(countriesByTag.values());
 };
 
-const buildRegions = (provinces: Province[]): Region[] => {
-	const regionsByName = new Map<string, Region>();
-	for (const province of provinces) {
-		const regionName = provinceRegionLookup.get(province.id) ?? 'European Theatre';
-		const regionId = slugify(regionName);
-		const region = regionsByName.get(regionId);
-		if (region) {
-			region.provinceIds.push(province.id);
-		} else {
-			regionsByName.set(regionId, {
-				id: regionId,
-				name: regionName,
-				provinceIds: [province.id],
-			});
-		}
+const ensureSubdivisionBucket = (ownerTag: string): Province[] => {
+	const existing = subdivisionsByCountryTag.get(ownerTag);
+	if (existing) {
+		return existing;
 	}
-	return Array.from(regionsByName.values());
+	const bucket: Province[] = [];
+	subdivisionsByCountryTag.set(ownerTag, bucket);
+	return bucket;
 };
 
-const provinces = buildProvinces();
-const countries = buildCountries(provinces);
-const regions = buildRegions(provinces);
+const registerSubdivisionCollections = (
+	modules: Record<string, FeatureCollection<Geometry>>,
+	options: { typeLabel: string },
+) => {
+	for (const [path, collection] of Object.entries(modules)) {
+		const match = path.match(/\/(states|areas)\/([^/]+)\//);
+		if (!match) {
+			continue;
+		}
+		const datasetKey = match[2];
+		const ownerTag = countryTagByDatasetKey.get(datasetKey);
+		if (!ownerTag) {
+			continue;
+		}
+		const ownerName = countryLabelByTag.get(ownerTag) ?? datasetKey;
+		const bucket = ensureSubdivisionBucket(ownerTag);
+		for (const feature of collection.features ?? []) {
+			const name = safeProperty(feature, ['name', 'NAME'], `${ownerName} ${options.typeLabel}`);
+			const polygon = extractPolygon(feature);
+			if (!polygon) {
+				continue;
+			}
+			const [lng, lat] = getFeatureCentroid(feature);
+			const terrain = deriveTerrain(lat);
+			const devBase = hashString(`${ownerTag}-${name}`) % 60;
+			const regionName = safeProperty(
+				feature,
+				['region', 'REGION', 'subregion', 'SUBREGION'],
+				`${ownerName} ${options.typeLabel}`,
+			);
+			const provinceId = `prov-${datasetKey}-${options.typeLabel}-${slugify(name)}`;
+			const province: Province = {
+				id: provinceId,
+				name,
+				centroid: [lng, lat],
+				polygon,
+				neighbors: [],
+				ownerTag,
+				controllerTag: ownerTag,
+				terrain,
+				development: 35 + (devBase % 40),
+				supplyLimit: 10 + (devBase % 15),
+				population: 150000 + (hashString(`${name}-pop`) % 2000000),
+			};
+			bucket.push(province);
+			registerProvince(province, regionName);
+		}
+	}
+};
+
+const baseProvinces = buildBaseProvinces();
+
+registerSubdivisionCollections(stateModules, { typeLabel: 'state' });
+registerSubdivisionCollections(areaModules, { typeLabel: 'area' });
+
+const provinces = baseProvinces;
+const countries = buildCountries(baseProvinces);
+const regions = Array.from(regionsById.values());
+
+const countryLookupByTag = new Map<string, Country>();
+for (const country of countries) {
+	countryLookupByTag.set(country.tag, country);
+}
 
 export const MAP_MODES: MapModeDefinition[] = [
 	{
@@ -235,3 +325,25 @@ export const MOCK_MAP_DATA: MapConceptData = {
 };
 
 export const DEFAULT_MAP_MODE: MapMode = 'political';
+
+export const getCountrySubdivisions = (ownerTag: string): Province[] | null => {
+	const list = subdivisionsByCountryTag.get(ownerTag);
+	return list ? [...list] : null;
+};
+
+export const findProvinceById = (provinceId: string): Province | undefined => provinceLookup.get(provinceId);
+
+export const findCountryByTag = (tag: string): Country | undefined => countryLookupByTag.get(tag);
+
+export const findRegionByProvinceId = (provinceId: string): Region | undefined => {
+	const regionId = provinceRegionIdLookup.get(provinceId);
+	if (!regionId) {
+		return undefined;
+	}
+	const region = regionsById.get(regionId);
+	if (!region) {
+		return undefined;
+	}
+	return { ...region, provinceIds: [...region.provinceIds] };
+};
+

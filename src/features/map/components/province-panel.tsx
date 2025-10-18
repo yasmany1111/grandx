@@ -1,6 +1,5 @@
 import { Building2, LineChart, Users, Wheat } from 'lucide-react';
 
-import { MOCK_MAP_DATA } from '../data/mock-world';
 import { useMapInteraction } from '../hooks/use-map-interaction';
 import { getProvinceSummary } from '../lib/province-helpers';
 
@@ -17,7 +16,7 @@ const formatNumber = (value: number): string => value.toLocaleString();
 
 export const ProvincePanel = () => {
 	const { selectedProvinceId } = useMapInteraction();
-	const summary = getProvinceSummary(selectedProvinceId, MOCK_MAP_DATA);
+	const summary = getProvinceSummary(selectedProvinceId);
 
 	if (!summary) {
 		return DETAILS_EMPTY_STATE;
