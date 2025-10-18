@@ -1,166 +1,171 @@
-import { useCallback, useEffect, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, MapControls, OrthographicCamera } from '@react-three/drei';
-import { Color, LineBasicMaterial, MeshStandardMaterial } from 'three';
+import { useMemo } from 'react';
+import type { Feature, GeoJsonObject } from 'geojson';
+import { PathOptions, latLngBounds } from 'leaflet';
+import { GeoJSON, MapContainer } from 'react-leaflet';
 
 import { MOCK_MAP_DATA } from '../data/mock-world';
 import { useMapInteraction } from '../hooks/use-map-interaction';
 import { getProvinceFill, getBorderColor } from '../lib/map-colors';
-import { useProvinceGeometry } from '../lib/province-geometry';
-import { MAP_HEIGHT, MAP_WIDTH } from '../lib/map-constants';
-import type { Province } from '../types';
+import {
+	buildProvinceFeatureCollection,
+	type ProvinceFeatureCollection,
+} from '../lib/province-geojson';
 
-const useProvinceMaterial = (color: string, intensity: number) =>
-	useMemo(() => {
-		const instance = new MeshStandardMaterial({
-			color,
-			emissive: new Color(color).multiplyScalar(intensity * 0.25),
-			emissiveIntensity: intensity,
-			metalness: 0.14,
-			roughness: 0.55,
-			polygonOffset: true,
-			polygonOffsetFactor: -1.8,
-		});
-		return instance;
-	}, [color, intensity]);
+interface ProvinceGeoLayerProps {
+	featureCollection: ProvinceFeatureCollection;
+}
 
-const ProvinceMesh = ({ province }: { province: Province }) => {
-	const { mapMode, hoveredProvinceId, selectedProvinceId, setHoveredProvince, setSelectedProvince } =
-		useMapInteraction();
+const ProvinceGeoLayer = ({ featureCollection }: ProvinceGeoLayerProps) => {
+	const {
+		mapMode,
+		hoveredProvinceId,
+		selectedProvinceId,
+		setHoveredProvince,
+		setSelectedProvince,
+	} = useMapInteraction();
 
-	const country = useMemo(
-		() => MOCK_MAP_DATA.countries.find((item) => item.tag === province.ownerTag),
-		[province.ownerTag],
-	);
-
-	const fill = getProvinceFill(province, mapMode, country);
-	const isHovered = hoveredProvinceId === province.id;
-	const isSelected = selectedProvinceId === province.id;
-	const material = useProvinceMaterial(fill, isSelected ? 1.45 : isHovered ? 1.1 : 0.75);
-	const outlineMaterial = useMemo(
-		() =>
-			new LineBasicMaterial({
-				color: isSelected ? '#e2e8f0' : isHovered ? '#cbd5f5' : '#0f172a',
-				linewidth: 1.4,
-			}),
-		[isHovered, isSelected],
-	);
-	const { geometry, edges, centroid } = useProvinceGeometry(province);
-
-	useEffect(() => () => material.dispose(), [material]);
-	useEffect(() => () => outlineMaterial.dispose(), [outlineMaterial]);
-
-	const handlePointerOver = useCallback(() => setHoveredProvince(province.id), [province.id, setHoveredProvince]);
-	const handlePointerOut = useCallback(() => setHoveredProvince(null), [setHoveredProvince]);
-	const handleClick = useCallback(() => setSelectedProvince(province.id), [province.id, setSelectedProvince]);
-
-	return (
-		<group position={centroid}>
-			<mesh
-				onPointerOver={handlePointerOver}
-				onPointerOut={handlePointerOut}
-				onClick={handleClick}
-				material={material}
-				geometry={geometry}
-				castShadow
-				receiveShadow
-			/>
-			{isSelected ? (
-				<mesh geometry={geometry} position={[0, 0.04, 0]}>
-					<meshStandardMaterial color="#f8fafc" transparent opacity={0.1} />
-				</mesh>
-			) : null}
-			<lineSegments geometry={edges} position={[0, 0.028, 0]}>
-				<primitive object={outlineMaterial} attach="material" />
-			</lineSegments>
-		</group>
-	);
-};
-
-const WaterSurface = () => {
-	const material = useMemo(
-		() =>
-			new MeshStandardMaterial({
-				color: '#0c1936',
-				metalness: 0.6,
-				roughness: 0.35,
-				envMapIntensity: 0.7,
-				transparent: true,
-				opacity: 0.92,
-			}),
+	const provinceById = useMemo(
+		() => new Map(MOCK_MAP_DATA.provinces.map((province) => [province.id, province])),
 		[],
 	);
-	useEffect(() => () => material.dispose(), [material]);
-	const deepTone = useMemo(() => new Color('#081222'), []);
-	const shallowTone = useMemo(() => new Color('#1f3e6b'), []);
+	const countriesByTag = useMemo(
+		() => new Map(MOCK_MAP_DATA.countries.map((country) => [country.tag, country])),
+		[],
+	);
 
-	useFrame(({ clock }) => {
-		const time = clock.getElapsedTime();
-		const tint = 0.52 + Math.sin(time * 0.18) * 0.04;
-		material.color.lerpColors(deepTone, shallowTone, tint);
-	});
+	const layerKey = `${mapMode}-${hoveredProvinceId ?? 'none'}-${selectedProvinceId ?? 'none'}`;
+
+	const styleFeature = (feature: Feature | undefined): PathOptions => {
+		const properties = feature?.properties as
+			| { provinceId?: string; ownerTag?: string; controllerTag?: string }
+			| undefined;
+		if (!properties?.provinceId) {
+			return {
+				color: '#0f172a',
+				weight: 1,
+				fillColor: '#1e293b',
+				fillOpacity: 0.45,
+			};
+		}
+		const province = provinceById.get(properties.provinceId);
+		if (!province) {
+			return {
+				color: '#0f172a',
+				weight: 1,
+				fillColor: '#1e293b',
+				fillOpacity: 0.45,
+			};
+		}
+		const owner = countriesByTag.get(province.ownerTag);
+		const isSelected = selectedProvinceId === province.id;
+		const isHovered = hoveredProvinceId === province.id;
+		const fill = getProvinceFill(province, mapMode, owner);
+		return {
+			color: isSelected ? '#f8fafc' : '#111827',
+			weight: isSelected ? 2.5 : 1.2,
+			fillColor: fill,
+			fillOpacity: isSelected ? 0.82 : isHovered ? 0.7 : 0.58,
+			opacity: isSelected ? 0.9 : 0.65,
+			className: 'province-shape',
+		};
+	};
 
 	return (
-		<mesh position={[0, -0.08, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-			<planeGeometry args={[MAP_WIDTH * 1.4, MAP_HEIGHT * 1.6, 96, 96]} />
-			<primitive object={material} attach="material" />
-		</mesh>
+		<GeoJSON
+			key={layerKey}
+			data={featureCollection as GeoJsonObject}
+			style={(feature) => styleFeature(feature)}
+			onEachFeature={(feature, layer) => {
+				const properties = feature.properties as { provinceId?: string } | undefined;
+				const provinceId = properties?.provinceId;
+				if (!provinceId) {
+					return;
+				}
+				layer.on({
+					mouseover: () => {
+						setHoveredProvince(provinceId);
+					},
+					mouseout: () => {
+						setHoveredProvince(null);
+					},
+					click: () => {
+						setSelectedProvince(provinceId);
+					},
+				});
+			}}
+		/>
 	);
 };
 
-const SceneBackdrop = () => {
-	const { mapMode } = useMapInteraction();
-	const tone = getBorderColor(mapMode);
-	return (
-		<mesh position={[0, -0.18, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-			<planeGeometry args={[MAP_WIDTH * 1.7, MAP_HEIGHT * 1.9, 1, 1]} />
-			<meshStandardMaterial color={tone} metalness={0.08} roughness={0.92} />
-		</mesh>
-	);
-};
+const getFeatureCollectionBounds = (featureCollection: ProvinceFeatureCollection) => {
+	let minLat = Infinity;
+	let minLng = Infinity;
+	let maxLat = -Infinity;
+	let maxLng = -Infinity;
 
-const MapScene = () => {
-	const { mapMode } = useMapInteraction();
-	const borderColor = getBorderColor(mapMode);
+	const register = (lng: number, lat: number) => {
+		if (lat < minLat) minLat = lat;
+		if (lat > maxLat) maxLat = lat;
+		if (lng < minLng) minLng = lng;
+		if (lng > maxLng) maxLng = lng;
+	};
 
-	return (
-		<group>
-			<ambientLight intensity={0.82} />
-			<directionalLight color="#f1e6d2" position={[18, 24, 12]} intensity={1.15} castShadow />
-			<directionalLight color="#7aa8ff" position={[-14, 16, 20]} intensity={0.42} />
-			<SceneBackdrop />
-			<WaterSurface />
-			{MOCK_MAP_DATA.provinces.map((province) => (
-				<ProvinceMesh key={province.id} province={province} />
-			))}
-			<mesh position={[0, -0.14, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-				<planeGeometry args={[MAP_WIDTH * 1.25, MAP_HEIGHT * 1.4]} />
-				<meshBasicMaterial color={borderColor} wireframe opacity={0.18} transparent />
-			</mesh>
-			<Environment preset="sunset" />
-		</group>
-	);
+	for (const feature of featureCollection.features) {
+		const geometry = feature.geometry;
+		if (!geometry) {
+			continue;
+		}
+		if (geometry.type === 'Polygon') {
+			for (const ring of geometry.coordinates) {
+				for (const [lng, lat] of ring) {
+					register(lng, lat);
+				}
+			}
+		}
+		if (geometry.type === 'MultiPolygon') {
+			for (const polygon of geometry.coordinates) {
+				for (const ring of polygon) {
+					for (const [lng, lat] of ring) {
+						register(lng, lat);
+					}
+				}
+			}
+		}
+	}
+	if (minLat === Infinity || minLng === Infinity || maxLat === -Infinity || maxLng === -Infinity) {
+		return latLngBounds([0, 0], [0, 0]);
+	}
+	return latLngBounds([minLat, minLng], [maxLat, maxLng]).pad(0.2);
 };
 
 export const MapCanvas = () => {
+	const { mapMode } = useMapInteraction();
+	const borderColor = getBorderColor(mapMode);
+	const featureCollection = useMemo(() => buildProvinceFeatureCollection(MOCK_MAP_DATA), []);
+	const bounds = useMemo(() => getFeatureCollectionBounds(featureCollection), [featureCollection]);
+
 	return (
-		<div className="h-full w-full">
-			<Canvas className="h-full w-full" shadows dpr={[1, 1.8]}>
-				<color attach="background" args={[new Color('#05070e')]} />
-				<fog attach="fog" args={[new Color('#05070e'), 14, 40]} />
-				<OrthographicCamera makeDefault position={[0, 14, 10]} zoom={22} />
-				<MapControls
-					enableRotate={false}
-					enableDamping
-					dampingFactor={0.18}
-					zoomToCursor
-					target={[0, 0, 0]}
-					minZoom={16}
-					maxZoom={38}
-				/>
-				<MapScene />
-			</Canvas>
+		<div className="relative h-full w-full">
+			<div className="map-gradient-overlay absolute inset-0" aria-hidden />
+			<div className="absolute inset-0 bg-gradient-to-br from-slate-950/70 via-slate-950/20 to-slate-950/80" aria-hidden />
+			<MapContainer
+				bounds={bounds}
+				boundsOptions={{ padding: [40, 40] }}
+				minZoom={3}
+				maxZoom={7}
+				zoomSnap={0.5}
+				zoomControl={false}
+				scrollWheelZoom
+				doubleClickZoom={false}
+				attributionControl={false}
+				className="relative z-10 h-full w-full rounded-[2.5rem]"
+			>
+				<ProvinceGeoLayer featureCollection={featureCollection} />
+			</MapContainer>
+			<div
+				className="pointer-events-none absolute inset-0 rounded-[2.5rem] border border-slate-900/40"
+				style={{ boxShadow: `0 0 120px 20px ${borderColor}1c inset` }}
+			/>
 		</div>
 	);
 };
-

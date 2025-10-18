@@ -1,316 +1,184 @@
+import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import franceGeoJson from 'world-geojson/countries/france.json';
+import spainGeoJson from 'world-geojson/countries/spain.json';
+import germanyGeoJson from 'world-geojson/countries/germany.json';
+import italyGeoJson from 'world-geojson/countries/italy.json';
+import unitedKingdomGeoJson from 'world-geojson/countries/united_kingdom.json';
+import norwayGeoJson from 'world-geojson/countries/norway.json';
+import swedenGeoJson from 'world-geojson/countries/sweden.json';
+import denmarkGeoJson from 'world-geojson/countries/denmark.json';
+import portugalGeoJson from 'world-geojson/countries/portugal.json';
+import belgiumGeoJson from 'world-geojson/countries/belgium.json';
+import netherlandsGeoJson from 'world-geojson/countries/netherlands.json';
+
 import type {
 	Country,
 	MapConceptData,
+	MapMode,
 	MapModeDefinition,
 	MapOverlayMetric,
-	MapMode,
 	Province,
 	Region,
 } from '../types';
+import { getFeatureCentroid } from '../lib/geojson-centroid';
 
-const COUNTRIES: Country[] = [
-	{
-		tag: 'ALB',
-		name: 'Alberian Union',
-		color: '#6db8ff',
-		secondaryColor: '#1d447f',
-		capitalProvinceId: 'p-albion-bay',
-	},
-	{
-		tag: 'VAR',
-		name: 'Varenth Dominion',
-		color: '#ff7d54',
-		secondaryColor: '#6b1f0f',
-		capitalProvinceId: 'p-varos',
-	},
-	{
-		tag: 'KRS',
-		name: 'Karsan Steppes',
-		color: '#90d76b',
-		secondaryColor: '#2f5117',
-		capitalProvinceId: 'p-steppe-cap',
-	},
+const SOURCE_COLLECTIONS: FeatureCollection<Geometry>[] = [
+	franceGeoJson as FeatureCollection<Geometry>,
+	spainGeoJson as FeatureCollection<Geometry>,
+	germanyGeoJson as FeatureCollection<Geometry>,
+	italyGeoJson as FeatureCollection<Geometry>,
+	unitedKingdomGeoJson as FeatureCollection<Geometry>,
+	norwayGeoJson as FeatureCollection<Geometry>,
+	swedenGeoJson as FeatureCollection<Geometry>,
+	denmarkGeoJson as FeatureCollection<Geometry>,
+	portugalGeoJson as FeatureCollection<Geometry>,
+	belgiumGeoJson as FeatureCollection<Geometry>,
+	netherlandsGeoJson as FeatureCollection<Geometry>,
 ];
 
-const PROVINCES: Province[] = [
-	{
-		id: 'p-albion-bay',
-		name: 'Albion Bay',
-		centroid: [0.13, 0.68],
-		polygon: [
-			[0.05, 0.63],
-			[0.09, 0.74],
-			[0.16, 0.81],
-			[0.24, 0.76],
-			[0.21, 0.63],
-			[0.12, 0.58],
-			[0.06, 0.58],
-		],
-		neighbors: ['p-graycliff-heights', 'p-lakeshire', 'p-southwatch'],
-		ownerTag: 'ALB',
-		controllerTag: 'ALB',
-		terrain: 'plains',
-		development: 68,
-		supplyLimit: 24,
-		population: 920000,
-	},
-	{
-		id: 'p-graycliff-heights',
-		name: 'Graycliff Heights',
-		centroid: [0.28, 0.65],
-		polygon: [
-			[0.24, 0.76],
-			[0.32, 0.73],
-			[0.35, 0.66],
-			[0.32, 0.56],
-			[0.26, 0.55],
-			[0.21, 0.63],
-		],
-		neighbors: ['p-albion-bay', 'p-lakeshire'],
-		ownerTag: 'ALB',
-		controllerTag: 'ALB',
-		terrain: 'coast',
-		development: 52,
-		supplyLimit: 18,
-		population: 410000,
-	},
-	{
-		id: 'p-lakeshire',
-		name: 'Lakeshire',
-		centroid: [0.18, 0.53],
-		polygon: [
-			[0.12, 0.58],
-			[0.21, 0.63],
-			[0.26, 0.55],
-			[0.23, 0.48],
-			[0.16, 0.45],
-			[0.1, 0.5],
-		],
-		neighbors: ['p-albion-bay', 'p-graycliff-heights', 'p-southwatch'],
-		ownerTag: 'ALB',
-		controllerTag: 'ALB',
-		terrain: 'forest',
-		development: 45,
-		supplyLimit: 16,
-		population: 330000,
-	},
-	{
-		id: 'p-southwatch',
-		name: 'Southwatch',
-		centroid: [0.04, 0.5],
-		polygon: [
-			[0.06, 0.58],
-			[0.1, 0.5],
-			[0.07, 0.44],
-			[0.03, 0.4],
-			[0.0, 0.45],
-			[0.0, 0.6],
-		],
-		neighbors: ['p-albion-bay', 'p-lakeshire'],
-		ownerTag: 'ALB',
-		controllerTag: 'ALB',
-		terrain: 'coast',
-		development: 34,
-		supplyLimit: 13,
-		population: 280000,
-	},
-	{
-		id: 'p-storm-isle',
-		name: 'Storm Isle',
-		centroid: [0.35, 0.36],
-		polygon: [
-			[0.32, 0.36],
-			[0.35, 0.4],
-			[0.38, 0.36],
-			[0.35, 0.32],
-		],
-		neighbors: [],
-		ownerTag: 'ALB',
-		controllerTag: 'ALB',
-		terrain: 'coast',
-		development: 28,
-		supplyLimit: 7,
-		population: 120000,
-	},
-	{
-		id: 'p-varos',
-		name: 'Varos',
-		centroid: [0.52, 0.6],
-		polygon: [
-			[0.42, 0.62],
-			[0.5, 0.7],
-			[0.58, 0.68],
-			[0.6, 0.56],
-			[0.55, 0.5],
-			[0.46, 0.53],
-		],
-		neighbors: ['p-emberfall', 'p-sunreach'],
-		ownerTag: 'VAR',
-		controllerTag: 'VAR',
-		terrain: 'mountain',
-		development: 62,
-		supplyLimit: 18,
-		population: 540000,
-	},
-	{
-		id: 'p-emberfall',
-		name: 'Emberfall',
-		centroid: [0.6, 0.58],
-		polygon: [
-			[0.5, 0.7],
-			[0.63, 0.66],
-			[0.7, 0.58],
-			[0.66, 0.48],
-			[0.58, 0.46],
-			[0.54, 0.57],
-		],
-		neighbors: ['p-varos', 'p-red-dunes', 'p-sunreach'],
-		ownerTag: 'VAR',
-		controllerTag: 'VAR',
-		terrain: 'desert',
-		development: 40,
-		supplyLimit: 11,
-		population: 260000,
-	},
-	{
-		id: 'p-sunreach',
-		name: 'Sunreach',
-		centroid: [0.48, 0.44],
-		polygon: [
-			[0.46, 0.53],
-			[0.55, 0.5],
-			[0.6, 0.4],
-			[0.52, 0.34],
-			[0.45, 0.36],
-			[0.4, 0.45],
-		],
-		neighbors: ['p-varos', 'p-emberfall', 'p-red-dunes'],
-		ownerTag: 'VAR',
-		controllerTag: 'VAR',
-		terrain: 'desert',
-		development: 36,
-		supplyLimit: 10,
-		population: 210000,
-	},
-	{
-		id: 'p-red-dunes',
-		name: 'Red Dunes',
-		centroid: [0.62, 0.44],
-		polygon: [
-			[0.6, 0.56],
-			[0.66, 0.48],
-			[0.7, 0.43],
-			[0.67, 0.33],
-			[0.6, 0.34],
-			[0.56, 0.44],
-		],
-		neighbors: ['p-emberfall', 'p-sunreach'],
-		ownerTag: 'VAR',
-		controllerTag: 'VAR',
-		terrain: 'desert',
-		development: 24,
-		supplyLimit: 7,
-		population: 180000,
-	},
-	{
-		id: 'p-steppe-cap',
-		name: 'Saryk Vale',
-		centroid: [0.79, 0.58],
-		polygon: [
-			[0.72, 0.58],
-			[0.8, 0.66],
-			[0.87, 0.61],
-			[0.87, 0.52],
-			[0.8, 0.47],
-			[0.74, 0.51],
-		],
-		neighbors: ['p-nomad-frontier', 'p-ashen-coast', 'p-hinterlands'],
-		ownerTag: 'KRS',
-		controllerTag: 'KRS',
-		terrain: 'plains',
-		development: 30,
-		supplyLimit: 14,
-		population: 320000,
-	},
-	{
-		id: 'p-nomad-frontier',
-		name: 'Nomad Frontier',
-		centroid: [0.89, 0.55],
-		polygon: [
-			[0.8, 0.66],
-			[0.92, 0.62],
-			[0.96, 0.54],
-			[0.92, 0.44],
-			[0.87, 0.45],
-			[0.87, 0.61],
-		],
-		neighbors: ['p-steppe-cap', 'p-hinterlands'],
-		ownerTag: 'KRS',
-		controllerTag: 'KRS',
-		terrain: 'plains',
-		development: 18,
-		supplyLimit: 8,
-		population: 150000,
-	},
-	{
-		id: 'p-ashen-coast',
-		name: 'Ashen Coast',
-		centroid: [0.76, 0.43],
-		polygon: [
-			[0.74, 0.51],
-			[0.8, 0.47],
-			[0.82, 0.39],
-			[0.77, 0.34],
-			[0.7, 0.38],
-			[0.7, 0.48],
-		],
-		neighbors: ['p-steppe-cap', 'p-hinterlands'],
-		ownerTag: 'KRS',
-		controllerTag: 'KRS',
-		terrain: 'coast',
-		development: 26,
-		supplyLimit: 9,
-		population: 200000,
-	},
-	{
-		id: 'p-hinterlands',
-		name: 'Hinterlands',
-		centroid: [0.84, 0.46],
-		polygon: [
-			[0.8, 0.47],
-			[0.87, 0.52],
-			[0.92, 0.44],
-			[0.88, 0.36],
-			[0.82, 0.33],
-			[0.78, 0.38],
-		],
-		neighbors: ['p-steppe-cap', 'p-nomad-frontier', 'p-ashen-coast'],
-		ownerTag: 'KRS',
-		controllerTag: 'KRS',
-		terrain: 'plains',
-		development: 22,
-		supplyLimit: 9,
-		population: 180000,
-	},
-];
+const GEOJSON: FeatureCollection<Geometry> = {
+	 type: 'FeatureCollection',
+	 features: SOURCE_COLLECTIONS.flatMap((collection) => collection.features ?? []),
+};
 
-const REGIONS: Region[] = [
-	{
-		id: 'r-western-reach',
-		name: 'Western Reach',
-		provinceIds: ['p-albion-bay', 'p-graycliff-heights', 'p-lakeshire', 'p-southwatch', 'p-storm-isle'],
-	},
-	{
-		id: 'r-ember-spine',
-		name: 'Ember Spine',
-		provinceIds: ['p-varos', 'p-emberfall', 'p-sunreach', 'p-red-dunes'],
-	},
-	{
-		id: 'r-steppe-expanse',
-		name: 'Karsan Expanse',
-		provinceIds: ['p-steppe-cap', 'p-nomad-frontier', 'p-ashen-coast', 'p-hinterlands'],
-	},
-];
+const safeProperty = <T extends Feature>(feature: T, keys: string[], fallback = ''): string => {
+	const properties = feature.properties as Record<string, unknown> | undefined;
+	if (!properties) {
+		return fallback;
+	}
+	for (const key of keys) {
+		const raw = properties[key];
+		if (typeof raw === 'string' && raw.trim().length > 0) {
+			return raw;
+		}
+	}
+	return fallback;
+};
+
+const slugify = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'unknown';
+
+const extractPolygon = (feature: Feature): Array<[number, number]> | null => {
+	const geometry = feature.geometry;
+	if (!geometry) {
+		return null;
+	}
+	if (geometry.type === 'Polygon') {
+		const [ring] = geometry.coordinates;
+		return ring ? ring.map(([lng, lat]) => [lng, lat]) : null;
+	}
+	if (geometry.type === 'MultiPolygon') {
+		const [firstPolygon] = geometry.coordinates;
+		if (!firstPolygon) {
+			return null;
+		}
+		const [ring] = firstPolygon;
+		return ring ? ring.map(([lng, lat]) => [lng, lat]) : null;
+	}
+	return null;
+};
+
+const deriveTerrain = (lat: number): Province['terrain'] => {
+	if (lat > 60) {
+		return 'forest';
+	}
+	if (lat > 50) {
+		return 'plains';
+	}
+	if (lat > 45) {
+		return 'forest';
+	}
+	if (lat > 35) {
+		return 'plains';
+	}
+	if (lat > 25) {
+		return 'coast';
+	}
+	return 'desert';
+};
+
+const hashString = (input: string): number => {
+	let hash = 0;
+	for (let i = 0; i < input.length; i += 1) {
+		hash = (hash << 5) - hash + input.charCodeAt(i);
+		hash |= 0;
+	}
+	return Math.abs(hash);
+};
+
+const provinceRegionLookup = new Map<string, string>();
+
+const buildProvinces = (): Province[] => {
+	const features = GEOJSON.features ?? [];
+	return features
+		.map((feature, index) => {
+			const name = safeProperty(feature, ['name', 'NAME', 'admin', 'ADMIN'], `Territory ${index + 1}`);
+			const slug = slugify(name);
+			const polygon = extractPolygon(feature);
+			if (!polygon) {
+				return null;
+			}
+			const [lng, lat] = getFeatureCentroid(feature);
+			const terrain = deriveTerrain(lat);
+			const devBase = hashString(name) % 60;
+			const regionName = safeProperty(feature, ['subregion', 'SUBREGION', 'region', 'REGION', 'continent', 'CONTINENT'], 'European Theatre');
+			const provinceId = `prov-${slug}`;
+			provinceRegionLookup.set(provinceId, regionName);
+			return {
+				id: provinceId,
+				name,
+				centroid: [lng, lat],
+				polygon,
+				neighbors: [],
+				ownerTag: `country-${slug}`,
+				controllerTag: `country-${slug}`,
+				terrain,
+				development: 40 + (devBase % 50),
+				supplyLimit: 12 + (devBase % 18),
+				population: 300000 + (hashString(`${name}-pop`) % 3000000),
+			};
+		})
+		.filter((province): province is Province => province !== null);
+};
+
+const buildCountries = (provinces: Province[]): Country[] => {
+	const countriesByTag = new Map<string, Country>();
+	for (const province of provinces) {
+		if (countriesByTag.has(province.ownerTag)) {
+			continue;
+		}
+		const name = province.name;
+		countriesByTag.set(province.ownerTag, {
+			tag: province.ownerTag,
+			name,
+			color: `hsl(${hashString(name) % 360}deg 70% 60%)`,
+			capitalProvinceId: province.id,
+		});
+	}
+	return Array.from(countriesByTag.values());
+};
+
+const buildRegions = (provinces: Province[]): Region[] => {
+	const regionsByName = new Map<string, Region>();
+	for (const province of provinces) {
+		const regionName = provinceRegionLookup.get(province.id) ?? 'European Theatre';
+		const regionId = slugify(regionName);
+		const region = regionsByName.get(regionId);
+		if (region) {
+			region.provinceIds.push(province.id);
+		} else {
+			regionsByName.set(regionId, {
+				id: regionId,
+				name: regionName,
+				provinceIds: [province.id],
+			});
+		}
+	}
+	return Array.from(regionsByName.values());
+};
+
+const provinces = buildProvinces();
+const countries = buildCountries(provinces);
+const regions = buildRegions(provinces);
 
 export const MAP_MODES: MapModeDefinition[] = [
 	{
@@ -345,30 +213,25 @@ export const MAP_MODES: MapModeDefinition[] = [
 	},
 ];
 
-export const MOCK_DEVELOPMENT_METRIC: MapOverlayMetric[] = PROVINCES.map(
-	(province) => ({
-		provinceId: province.id,
-		value: province.development,
-	}),
-);
+export const MOCK_DEVELOPMENT_METRIC: MapOverlayMetric[] = provinces.map((province) => ({
+	provinceId: province.id,
+	value: province.development,
+}));
 
-export const MOCK_SUPPLY_METRIC: MapOverlayMetric[] = PROVINCES.map(
-	(province) => ({
-		provinceId: province.id,
-		value: province.supplyLimit,
-	}),
-);
+export const MOCK_SUPPLY_METRIC: MapOverlayMetric[] = provinces.map((province) => ({
+	provinceId: province.id,
+	value: province.supplyLimit,
+}));
 
-export const MOCK_RELATIONS: Record<string, number> = {
-	ALB: 35,
-	VAR: -45,
-	KRS: 10,
-};
+export const MOCK_RELATIONS: Record<string, number> = countries.reduce<Record<string, number>>((acc, country, index) => {
+	acc[country.tag] = -40 + (index % 5) * 20;
+	return acc;
+}, {});
 
 export const MOCK_MAP_DATA: MapConceptData = {
-	countries: COUNTRIES,
-	provinces: PROVINCES,
-	regions: REGIONS,
+	countries,
+	provinces,
+	regions,
 };
 
 export const DEFAULT_MAP_MODE: MapMode = 'political';

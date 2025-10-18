@@ -1,15 +1,15 @@
 # Map Concept — Paradox-Style Layout
 
 ## Overview
-- **Renderer:** `@react-three/fiber` + `three` with stylized lighting, flat provinces, and animated water wash.
+- **Renderer:** Leaflet (`react-leaflet`) with a custom CRS and gradient backdrops, rendering province GeoJSON for a stylized political map.
 - **Interaction:** Hover + selection wired through a Zustand store, surfacing data cards and sidebar intel.
 - **Modes:** Political, terrain, supply, development, diplomacy — mapped to palettes per the `docs/game-plan.md` design pillars.
 - **UI shell:** Top timeline bar, left map-mode rail, right province dossier, and bottom alert ticker to echo classic Paradox ergonomics.
-- **World layout:** Hand-authored polygonal provinces stitched into three continents plus island holdings, giving an immediately readable geopolitical silhouette.
+- **World layout:** Leaflet renders combined `world-geojson` country polygons (Western Europe slice) to give us production-quality borders without hand authoring.
 
 ## Current Scope
-- Mock world (`mock-world.ts`) seeds 12 provinces across three polities plus an island holding, with adjacency baked in for overlays.
-- Map canvas now renders province polygons extruded onto the terrain plane with shader-driven water surrounds for a continental silhouette.
+- Mock world (`mock-world.ts`) seeds 13 provinces across three polities plus an offshore isle, with clean shared borders for overlays.
+- Map canvas now renders GeoJSON directly from the dataset using the default Leaflet projection; styling layers adapt based on the active map mode.
 - HUD overlays (hover card, fog indicator, legend) demonstrate layering strategy for future metrics.
 - Province panel highlights development tiering, supply capacity, and occupation state messaging.
 
