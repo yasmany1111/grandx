@@ -2,7 +2,7 @@ import { Pause, Play, SkipForward, Zap } from 'lucide-react';
 
 export const MapTopBar = () => {
 	return (
-		<header className="flex w-full items-center justify-between rounded-3xl border border-slate-800/70 bg-slate-950/85 px-6 py-4 shadow-lg shadow-slate-900/70 backdrop-blur">
+		<header className="flex w-full items-center justify-between rounded-b-3xl border border-slate-800/70 bg-slate-950/85 px-6 py-4 shadow-lg shadow-slate-900/70 backdrop-blur">
 			<div className="flex flex-1 items-center gap-6">
 				<div className="flex flex-col">
 					<span className="text-xs uppercase tracking-widest text-slate-500">
